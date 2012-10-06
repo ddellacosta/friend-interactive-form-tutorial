@@ -1,12 +1,14 @@
 # A Friend Tutorial, Using the `interactive-form` Workflow
 
-As a Ruby on Rails developer, I've long been accustomed to having amazing, open-source libraries available for getting a web app up and running quickly. And one of the most important requirements of most web apps is providing some form of authentication and authorization.  In the Ruby on Rails eco-system, this includes great libraries like Devise, Warden, CanCan, and more.
+One of the most important requirements of most web apps is providing some form of authentication and authorization. And as a Ruby on Rails developer, I've long been accustomed to having amazingly full-featured open-source libraries available for getting a web app up and running quickly; libraries like Devise, Warden, CanCan, and more.
 
-Doing web app development in Clojure, at the present time the tools are not nearly at the same state of maturity.  Earlier this year, while considering the challenge of providing a generalized, modular system for authentication and authorization, Chas Emerick introduced a library called [Friend][1] which aims to provide some of the necessary foundation for providing this kind of system.
+For web app development in Clojure, at the present time the tools are not nearly at the same state of maturity.  However earlier this year, while considering the challenge of providing a generalized, modular system for authentication and authorization, Chas Emerick introduced a library called [Friend][1] which aims to provide some of the necessary foundation for providing this kind of system, along the lines of other frameworks already present in other language eco-systems.
 
-To see Friend in action, I'll write a simple login form using [Compojure][2], with the good old email + password credentials setup.
+## What is Friend?
 
-To see Friend's authentication working right away, we can write a very simple app in Compojure, which does nothing other than prevent an un-authenticated user from accessing a page with a simple authorization applied:
+Rather than [explaining it in detail][1], I'll engage in the "show don't tell" method. In the following tutorial, I'll write a simple login form using [Compojure][2], with the good old email + password credentials setup to show you how Friend can be plugged into a Clojure web app quite simply.
+
+To see Friend's authentication working right away, we can simply wrap some of our Compojure functions in the authentication and authorization filters which Friend provides.  The example below does nothing other than prevent an un-authenticated user from accessing a page with a simple authorization applied to it:
 
 ````clojure
 (defroutes app-routes
@@ -23,9 +25,11 @@ To see Friend's authentication working right away, we can write a very simple ap
 
 This doesn't really do much, but shows you basically how Friend wraps up your routes, locking authorized routes down, right out of the box; if you go to the path `/authorized`, you'll see you get redirected immediately to `/login`.  Notice that our routes are not structured any differently than what default Compojure scaffolding provides, we simply intercept the routes with Friend's `authenticate` function before they are passed to Compojure's `site` function.  And in order to trigger the authentication/authorization functionality in Friend, we wrap the response in our route with Friend's `authorize` function, passing in the role which is authorized to access this route as the first argument.
 
-By default, Friend will hand back a redirect to the path `/login` for paths which need to be authenticated, but you can configure this in the second argument to authenticate.  Right now it's just an empty map, as you can see, but this is where you set up most of Friend's functionality outside of configuring your routes.
+## Setting up the `interactive-form` Workflow
 
-Right now we don't have any way to login, so let's resolve that by setting up a **workflow.**  Friend uses the concept of the workflow as a way to describe the method by which a user logs in.  This can encompass basic HTTP auth, a simple form, OpenID (the previous three are provided in Friend as default workflows you can use), as well as Oauth1/[Oauth2][3], [Persona][4], or any other system.
+By default, Friend will hand back a redirect to `/login` when an unauthenticated user hits an authorized path (you can configure this in the second argument to authenticate, what is now an empty map, if you so desire--this is described in the [README] in detail).  However, right now we don't have any way to login, so we'll resolve that by setting up a **workflow.**
+
+Friend uses the concept of the workflow as a way to describe the method by which a user logs in.  This can encompass basic HTTP auth, a simple form, OpenID (the previous three are provided in Friend as default workflows you can use), as well as Oauth1/[Oauth2][3], [Persona][4], or any other system.
 
 This means that if the login method you want to use doesn't exist, you can use Friend to provide higher-level authentication and authorization abstractions, and concern yourself only with implementing the workflow for authentication with that login method.  It also simplifies decoupling your authorization scheme from your authentication, so that the same authorization scheme can work with multiple authentication workflows transparently.
 
@@ -38,6 +42,8 @@ So we have a way to actually login to this app, we'll set up the interactive-for
    			{:credential-fn (partial creds/bcrypt-credential-fn users)
                          :workflows [(workflows/interactive-form)]})))
 ````
+
+### Credentials
 
 I've cheated a bit by copying some example code from the [Friend README][1].  But it includes a bit more than I've explained up until this point: what is the `credential-fn` key, and what is the `bcrypt-credential-fn` function doing in there?  What is `users`?
 
@@ -76,6 +82,8 @@ Moving along, we'll cheat again and copy the users map from the [Friend README][
 
 You'll see that we have some extra information in here as well: authorization configuration in addition to the authentication credentials.  We'll get to that in a minute, although if you've read the routes above carefully, you may already have a good idea how this is used.
 
+## Making it Actually Work
+
 So, we've theoretically done everything we need to do to get a workflow (`interactive-form`) working, and we have our credentials configured and ready to go--we just have to get the HTML scaffolding in place.  This won't win any design usability awards, but for now we'll try this vanilla HTML:
 
 ````HTML
@@ -88,7 +96,13 @@ Password: <input type="password" name="password" value="" /><br />
 </form>
 ````
 
-Friend is set up to redirect to `/login` (GET) on a failed authentication, but what is somewhat buried in the README is that the interactive-form workflow has `/login` (POST) is set up to receive credentials and test against those credentials.  So, once you've created the above, you should be able to login.
+Friend is set up to redirect to `/login` (GET) on a failed authentication, but what is somewhat buried in the README is that the interactive-form workflow has `/login` (POST) is set up to receive credentials and test against those credentials.  So, once you've created the above, you should be able to login, and will get the response below when getting to the `/authorized` page:
+
+````
+This page can only be seen by authenticated users.
+````
+
+## Authorization and Roles
 
 What about authorization?  We've seen how Friend enables easy configuration of an authentication workflow, but how can we restrict access based on the roles configured in our `users` map?  Well, first let's try creating a new route that is restricted just to administrators:
 
