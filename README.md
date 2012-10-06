@@ -31,7 +31,7 @@ Notice that our routes are not structured any differently than what the default 
 
 By default, Friend will hand back a redirect to `/login` when an unauthenticated user hits an authorized path (you can configure this in the second argument to authenticate, what is now an empty map, if you so desire--this is described in the [README][1] in detail).  However, right now we don't have any way to login, so we'll resolve that by setting up a **workflow.**
 
-Friend uses the concept of the workflow as a way to describe the method by which a user logs in.  This can encompass basic HTTP auth, a simple form, OpenID (the previous three workflows are provided in Friend as default workflows you can use), as well as Oauth1/[Oauth2][3], [Persona][4], or any other protocol.
+Friend uses the concept of the workflow as a way to describe the method by which a user logs in.  This can encompass basic HTTP auth, a simple HTML login form, OpenID (the previous three workflows are provided in Friend as default workflows you can use), as well as Oauth1/[Oauth2][3], [Persona][4], or any other protocol.
 
 This means that if the login method you want to use doesn't exist, you can use Friend to provide higher-level authentication and authorization abstractions, and concern yourself only with implementing the workflow for authentication with that login method.  It also simplifies decoupling your authorization scheme from your authentication, so that the same authorization scheme can work with multiple authentication workflows transparently.
 
@@ -41,15 +41,15 @@ So we can actually login to this app, we'll set up the interactive-form workflow
 (def app
   (handler/site
    (friend/authenticate app-routes
-   			{:credential-fn (partial creds/bcrypt-credential-fn users)
+                        {:credential-fn (partial creds/bcrypt-credential-fn users)
                          :workflows [(workflows/interactive-form)]})))
 ````
 
-I've cheated a bit by copying some example code from the [Friend README][1].  But it includes a bit more than I've explained up until this point: what is the `credential-fn` key, and what is the `bcrypt-credential-fn` function doing in there?  What is `users`?
+This includes a bit more than I've explained up until this point: what is the `credential-fn` key, and what is the `bcrypt-credential-fn` function doing in there?  What is `users` supposed to be?
 
 ## Credentials
 
-Well, the other thing that Friend lets you do is pass in a function defining how you want to process a user's credentials during the authentication workflow. This is what `credential-fn` is doing.  As it says in the [Friend README][1]: *Workflows use a credential function to verify the credentials provided to them via requests. Credential functions can be specified either as a :credential-fn option to cemerick.friend/authenticate, or often as an (overriding) :credential-fn option to individual workflow functions.*
+Friend lets you pass in a function defining how you want to process a user's credentials during the authentication workflow: this is what `credential-fn` is doing.  As it says in the [Friend README][1]: *Workflows use a credential function to verify the credentials provided to them via requests. Credential functions can be specified either as a :credential-fn option to cemerick.friend/authenticate, or often as an (overriding) :credential-fn option to individual workflow functions.*
 
 That is what bcrypt-credential-fn is, but how does it work?  Well, Mr. Emerick intelligently chose to use [bcrypt as the default option to ensure real security][5] for your user's passwords.  And the docs for `bcrypt-credential-fn` state that this function expects *a function of one argument that will look up stored user credentials given a username/id*.  So, all we really need here is a map with the usernames mapped to the bcrypt-hashed passwords.  Luckily, Friend also gives us a bcrypt-hashing function, so we'll use that.
 
@@ -71,7 +71,7 @@ user=>
 
 You can see in the final example that when you the credentials pass, you get a map with the username returned.  Otherwise, nil.
 
-Moving along, we'll cheat again and copy the users map from the [Friend README][1], tweaking the names and passwords slightly:
+Moving along, we'll cheat and copy the users map from the [Friend README][1], tweaking the names and passwords slightly:
 
 ````clojure
 (def users {"admin" {:username "admin"
@@ -84,9 +84,9 @@ Moving along, we'll cheat again and copy the users map from the [Friend README][
 
 You'll see that we have some extra information in here as well: role configuration in addition to the authentication credentials.  We'll get to that in a minute, although if you noticed that we passed in the ::user role to the `/authorized` route in our first example, you may have already guess how the roles are used.
 
-## Making it Actually Work
+## Putting It All Together
 
-We've done everything behind the scenes that we need to do to get our `interactive-form` workflow in place, and we have our credentials configured and ready to go--we just have to provide some HTML scaffolding.  This won't win any design usability awards, but for now we'll try this vanilla HTML:
+We've done everything behind the scenes that we need to do to get our `interactive-form` workflow in place, and we have our credentials configured and ready to go--we just have to provide some HTML scaffolding.  This won't win any design or usability awards, but for now we'll try this vanilla HTML:
 
 ````HTML
 <h2>Login</h2>
@@ -104,7 +104,7 @@ Password: <input type="password" name="password" value="" /><br />
   (GET "/login" [] (ring.util.response/file-response "login.html" {:root "resources"}))
 ````
 
-As you already know, Friend is set up to redirect to `/login` (GET) on a failed authentication.  But (a bit buried) in the README is that the interactive-form workflow has `/login` (POST) set up to receive credentials and test against those credentials.
+As you already know, Friend is set up to redirect to `/login` (GET) on a failed authentication.  But (a bit buried) in the README is the fact that the interactive-form workflow has `/login` (POST) set up to receive credentials and test against those credentials.
 
 So, the HTML above is all you should need to login.  If you try it, you should get the response below on the `/authorized` page:
 
@@ -127,7 +127,9 @@ You can see this has the same form as our `/authorized` route, but instead of pa
 Sorry, you do not have access to this resource.  
 ````
 
-Let's set up a route for logging out so we can test our admin login.  Friend also provides a helper function for this which will clear out your cached authentication state.  In our routes we'll add:
+Okay, good, that's what we expected.
+
+Now let's set up a route for logging out so we can test our admin login.  Friend also provides a `logout` helper function for this which will clear out your cached authentication state.  In our routes we'll add:
 
 ````clojure
 (friend/logout (ANY "/logout" request (ring.util.response/redirect "/"))) # also taken from the Friend README
@@ -145,17 +147,21 @@ Great!  Now if we go to the `/authorized` page, we should still be able to get i
 Sorry, you do not have access to this resource.  
 ````
 
-That doesn't make any sense, admins should have more rights than users, shouldn't they?  So I guess we have to add the `users` role to the `admin` user's roles?  That seems kind of silly, as our authorization system should know basic stuff like "admins" have all the rights that "users" do...but luckily we don't have to do this.  As is written in the README, because the `authorized?` check uses `isa?`, *...you can take advantage of Clojure's hierarchies via derive to establish relationships between roles.*  So we can just do this:
+That doesn't make any sense, admins should have more rights than users, shouldn't they?  So I guess we have to add the `users` role to the `admin` user's roles?
+
+That seems kind of silly, as our authorization system should know basic stuff like "admins" have all the rights that "users" do...but luckily we don't have to do this.  As is written in the README, because the `authorized?` check uses `isa?`, *...you can take advantage of Clojure's hierarchies via derive to establish relationships between roles.*  So we can just do this:
 
 ````clojure
 (derive ::admin ::user)
 ````
 
-And voila, our "admin" can see everything our "user" can see.
+...and voila, our "admin" can see everything our "user" can see.
+
+---
 
 This just scratches the surface, but there you have it: a very flexible authentication and authorization framework for your app, using very little configuration and coding to get going.
 
-(Please note that all the code used in the tutorial is available in this repository.  If you find any issues with the tutorial, or have edits or suggestions on how to make it more clear, please open up an issue or make a pull request with changes.  Thanks!)
+(All the code used in the tutorial is available in this repository.  If you find any issues with the tutorial, or have edits or suggestions on how to make it more clear, please open up an issue or make a pull request with changes.  Thanks!)
 
 [1]: https://github.com/cemerick/friend
 [2]: https://github.com/weavejester/compojure
