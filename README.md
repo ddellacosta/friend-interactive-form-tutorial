@@ -6,7 +6,7 @@ However, earlier this year, while considering the challenge of providing a gener
 
 ## How do you use Friend?
 
-Rather than explaining it in detail ([the README does a good job of explaining the details and thought behind it][1]), I'll practice in the "show don't tell" method: in the following tutorial, I'll write a simple login form using [Compojure][2], using a standard email + password credentials setup, to show you how Friend can be plugged into a Clojure web app quite simply.
+Rather than explaining it in detail ([the README does a good job of explaining the details and thought behind it][1]), I'll practice the "show don't tell" method: in the following tutorial, I'll write a simple login form using [Compojure][2], using a standard email + password credentials setup, to show you how Friend can be plugged into a Clojure web app quite simply.
 
 To see Friend's authentication working right away, we can simply wrap some of our Compojure functions in the authentication and authorization filters which Friend provides.  The example below does nothing other than prevent an unauthenticated user from accessing a page with a simple authorization applied to it:
 
