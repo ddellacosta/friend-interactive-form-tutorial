@@ -4,7 +4,7 @@ One of the most important requirements of most web apps is providing some form o
 
 However, earlier this year, while considering the challenge of providing a generalized, modular system for authentication and authorization, Chas Emerick introduced a library called [Friend][1].  Friend aims to provide some of the necessary foundations for this kind of flexible authentication/authorization system, along the lines of other libraries already present in other language eco-systems.
 
-## What is Friend?
+## How do you use Friend?
 
 Rather than explaining it in detail ([the README does a good job of explaining the details and thought behind it][1]), I'll practice in the "show don't tell" method: in the following tutorial, I'll write a simple login form using [Compojure][2], using a standard email + password credentials setup, to show you how Friend can be plugged into a Clojure web app quite simply.
 
