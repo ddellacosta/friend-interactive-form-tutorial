@@ -3,6 +3,7 @@
   (:require [compojure.handler :as handler]
             [compojure.route :as route]
             [cemerick.friend :as friend]
+            [friend-form-login.workflow :as login-workflow]
             (cemerick.friend [workflows :as workflows]
                              [credentials :as creds])))
 
@@ -29,4 +30,4 @@
   (handler/site
    (friend/authenticate app-routes
    			{:credential-fn (partial creds/bcrypt-credential-fn users)
-                         :workflows [(workflows/interactive-form)]})))
+                         :workflows [(login-workflow/email-workflow)]})))
