@@ -21,7 +21,9 @@
        (friend/authorize #{::user} "This page can only be seen by authenticated users."))
   (GET "/admin" request
        (friend/authorize #{::admin} "This page can only be seen by administrators."))
-  (GET "/login" [] (ring.util.response/file-response "login.html" {:root "resources"}))
+  (GET "/login" [] (-> "login.html"
+                       (ring.util.response/file-response {:root "resources"})
+                       (ring.util.response/content-type "text/html")))
   (friend/logout (ANY "/logout" request (ring.util.response/redirect "/")))
   (route/not-found "Not Found"))
 
