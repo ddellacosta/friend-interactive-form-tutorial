@@ -14,5 +14,9 @@
     (when (and (= uri (util/gets :login-uri config
                                  (::friend/auth-config request)))
                (= :post request-method))
-      (if-let [creds (credential-fn)]
+      ;; Get the credential function from either what was passed in
+      ;; or what we have stored in the request via Friend.
+      (if-let [creds ((util/gets :credential-fn
+                                 config
+                                 (::friend/auth-config request)))]
         (make-auth creds)))))
