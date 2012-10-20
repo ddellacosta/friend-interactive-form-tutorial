@@ -5,6 +5,21 @@
             [ring.mock.request :as ring-mock]
             [postal.core :as postal]))
 
+(def postal-config
+  (with-meta
+    {:from "ddellacosta@gmail.com"
+     :to "dave@dubitable.com"
+     :subject "YEAH!"
+     :body "test"}
+    {:host "smtp.gmail.com"
+     :user "ddellacosta@gmail.com"
+     :pass ""
+     :ssl :yes}))
+
+(background
+ (postal/send-message postal-config) =>
+ (fn [& anything] {:error :SUCCESS, :code 0, :message "messages sent"}))
+
 (def meta-data {:type ::friend/auth
                 ::friend/workflow :email-login
                 ::friend/redirect-on-auth? true})
@@ -79,23 +94,22 @@
 ;; How do I mock how functions properly in Midje again?
 (def mock-email-sent nil)
 
-(future-fact
+(fact
  "It sends an email on a successful authentication."
- mock-email-sent => true)
+ (((lw/email-workflow) request-with-cred-fn) :roles) => #{::user}
+ (provided
+  (postal/send-message postal-config) => 1 :times 1))
 
-;; (send-message ^{:host "smtp.gmail.com"
-;;                 :user "ddellacosta@gmail.com"
-;;                 :pass "bl4stst4mp"
-;;                 :ssl :yes}
-;;                {:from "ddellacosta@gmail.com"
-;;                 :to "dave@dubitable.com"
-;;                 :subject "YEAH!"
-;;                 :body "test"})
+(future-fact
+ "It sets the email 'from' map from configuration data")
+
+(future-fact
+ "It sets the email 'to' map from user credentials")
 
 (future-fact
  "It generates a token to be sent with the email."
  token => true)
 
-;; Generating token, 
+;; Generating token,
 ;; Devise's method:
 ;;   SecureRandom.base64(15).tr('+/=lIO0', 'pqrsxyz')
