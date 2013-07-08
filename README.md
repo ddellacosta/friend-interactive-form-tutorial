@@ -1,6 +1,6 @@
 # A Friend Tutorial, Using the `interactive-form` Workflow
 
-One of the most important requirements of most web apps is providing some form of authentication and authorization. And as a Ruby on Rails developer, I've long been accustomed to having amazingly full-featured, easily configurable open-source authentication and authorization libraries available, libraries that integrate well and provide generalized solutions.  This includes libraries like Devise, Warden, CanCan, Omniauth and more.  But until now Clojure hasn't had anything remotely like this--you'd have to role your own.
+One of the most important requirements of most web apps is providing some form of authentication and authorization. And as a Ruby on Rails developer, I've long been accustomed to having amazingly full-featured, easily configurable open-source authentication and authorization libraries available, libraries that integrate well and provide generalized solutions.  This includes libraries like Devise, Warden, CanCan, Omniauth and more.  But until now Clojure hasn't had anything remotely like this--you'd have to roll your own.
 
 However, earlier this year, while considering the challenge of providing a generalized, modular system for authentication and authorization, Chas Emerick introduced a library called [Friend][1].  Friend aims to provide some of the necessary foundations for this kind of flexible authentication/authorization system, along the lines of other libraries already present in other language eco-systems.
 
